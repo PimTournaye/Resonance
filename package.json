@@ -1,0 +1,9 @@
+{
+  "type": "module",
+  "dependencies": {
+    "lodash": "^4.17.21",
+    "simplex-noise": "^3.0.1",
+    "tonal": "^2.2.2",
+    "webmidi": "^3.0.15"
+  }
+}
