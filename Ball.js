@@ -15,6 +15,12 @@ export default class Ball {
         this.note = '';
         this.playNote = false;
 
+        this.active = true;
+
+        // Amount of bounces a ball can do in total
+        this.lifetime = _.random(8, 15);
+        this.lifetimeCounter = 0;
+
     }
 
     setNote(note){
@@ -25,20 +31,18 @@ export default class Ball {
         return this.note
     }
 
-    checkBoundsCollision() {
-        if (true) {
-
-        }
+    checkLifetime(){
+        if (!this.active) return;
+        if (this.lifetimeCounter == this.lifetime){ 
+            this.active = false;
+            console.log('ball died');
+        } 
+        else this.lifetimeCounter++;
     }
 
-    checkBallCollision(others) {
-        if (this.x) {
-
-        }
-
-    }
-
-    update() {
+    _update() {
+        // Check if ball is still active
+        if (!this.active) return;
         if (this.mass <= this.minMass) {
             console.log('bang!');
             this.changeMass();
