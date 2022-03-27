@@ -1,4 +1,4 @@
-import { room, start } from "./resonance.js"
+import { room, start, music } from "./resonance.js"
 import _ from "lodash";
 
 export default class Ball {
@@ -12,7 +12,7 @@ export default class Ball {
         this.maxMass = 1;
         this.minMass = 0.05;
 
-        this.note = '';
+        this.note = _.sample(music.getScale());
         this.playNote = false;
 
         this.active = true;
@@ -37,31 +37,33 @@ export default class Ball {
             this.active = false;
             console.log('ball died');
         } 
-        else this.lifetimeCounter++;
     }
 
     _update() {
         // Check if ball is still active
         if (!this.active) return;
         if (this.mass <= this.minMass) {
+            this.checkLifetime()
             console.log('bang!');
+            this.playNote = true;
             this.changeMass();
-        }
+        } else this.playNote = false;
         this.mass = this.mass - this.massSpeed;
-        this.playNote = false;
         //change velocity
         //change timer a bit
     }
 
     changeMass() {
         let sameChance = -_.random(0, 2);
-        this.playNote = true;
         if (sameChance == 2) {
             this.mass = this.maxMass;
             return;
         }
         this.massSpeed = _.random(0.01, 0.05);
         this.mass = this.maxMass;
+
+        //Increment the lifetime counter now trhat ball has bounced
+        this.lifetimeCounter++;
 
         // diminish velocity maybe?
         // if velocity is too low, splice Ball from list
