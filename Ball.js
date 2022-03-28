@@ -15,17 +15,24 @@ export default class Ball {
         this.massSpeed = _.random(0.2, 0.3);
         this.maxMass = 7;
         this.minMass = 0.5;
-        this.massDecay = 0.8
+        this.massDecay = 0.95
         this.mass = this.maxMass;
-
+        
         this.note = music.getNote(this.face)
         this.playNote = false;
-        this.initplay = playNote(this.note)
-
+        this.volume = 100;
+        this.filter = 100;
+        
+        this.log = () => {
+            console.log(this);
+        }
+        
+        
         this.active = true;
+        this.initplay = playNote(this.note, this.volume, this.filter)
 
         // Amount of bounces a ball can do in total
-        this.lifetime = _.random(4, 5);
+        this.lifetime = _.random(6, 8);
         this.lifetimeCounter = 0;
     }
 
@@ -75,6 +82,9 @@ export default class Ball {
 
         this.mass = this.maxMass
 
+        this.filter *= 0.8
+        this.volume *= 0.8
+
         //Increment the lifetime counter now trhat ball has bounced
         this.lifetimeCounter++;
 
@@ -92,7 +102,10 @@ export default class Ball {
         } else this.playNote = false;
         this.mass -= this.massSpeed;
         this.checkWallCollision()
-        console.log(this.mass);
+        
+        
+
+        console.log(this);
         //change velocity
         //change timer a bit
     }
