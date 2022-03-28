@@ -1,4 +1,4 @@
-import { room, start, music } from "./resonance.js"
+import { room, start, music, playNote } from "./resonance.js"
 import _ from "lodash";
 
 export default class Ball {
@@ -7,23 +7,25 @@ export default class Ball {
         this.x = start.x,
         this.y = start.y,
 
-        this.xspeed = 1;
-        this.yspeed = 1;
+        this.xspeed = _.random(-3, 3, true);
+        this.yspeed = _.random(0.5, 6, true);;
+
+        this.velocity = 1;
 
         this.mass = 0.4;
-        this.massSpeed = 0.01;
-        this.maxMass = 1;
+        this.massSpeed = _.random(0.01, 0.05);
+        this.maxMass = 1.2;
         this.minMass = 0.05;
 
         this.note = _.sample(music.getScale());
         this.playNote = false;
+        this.initplay = playNote(this.note)
 
         this.active = true;
 
         // Amount of bounces a ball can do in total
-        this.lifetime = _.random(8, 15);
+        this.lifetime = _.random(3, 5);
         this.lifetimeCounter = 0;
-
     }
 
     setNote(note){
@@ -32,6 +34,11 @@ export default class Ball {
 
     getNote(){
         return this.note
+    }
+
+    move(){
+        this.x += this.xspeed * this.velocity;
+        this.y += this.yspeed * this.velocity;
     }
 
     checkLifetime(){
@@ -51,6 +58,24 @@ export default class Ball {
             this.yspeed *= -1
         }
     }
+    changeMass() {
+        // let sameChance = -_.random(0, 2);
+        // if (sameChance == 2) {
+        //     this.mass = this.maxMass;
+        //     return;
+        // }
+
+        this.maxMass *= 0.8
+        this.massSpeed += 0.02
+
+        this.mass = this.maxMass
+
+        //Increment the lifetime counter now trhat ball has bounced
+        this.lifetimeCounter++;
+
+        // diminish velocity maybe?
+        // if velocity is too low, splice Ball from list
+    }
 
     _update() {
         // Check if ball is still active
@@ -67,21 +92,6 @@ export default class Ball {
         //change timer a bit
     }
 
-    changeMass() {
-        let sameChance = -_.random(0, 2);
-        if (sameChance == 2) {
-            this.mass = this.maxMass;
-            return;
-        }
-        this.massSpeed = _.random(0.01, 0.05);
-        this.mass = this.maxMass;
-
-        //Increment the lifetime counter now trhat ball has bounced
-        this.lifetimeCounter++;
-
-        // diminish velocity maybe?
-        // if velocity is too low, splice Ball from list
-    }
 
 
 

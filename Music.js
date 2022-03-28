@@ -22,17 +22,18 @@ export default class Music {
         return this.scale
     }
 
-    setNextTonic() {
-        let next = transpose(this.tonic, 'P5');
-        this.tonic = next;
-    }
-
+    
     getScale(){
         return this.scale
     }
-
+    
     setScale(scale){
         this.scale = scale;
+    }
+    
+    setNextTonic() {
+        let next = transpose(this.tonic, 'P5');
+        this.tonic = next;
     }
 
     getChord(){

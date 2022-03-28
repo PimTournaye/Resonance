@@ -10,6 +10,7 @@ import readline from 'readline';
 
 let channel, output, interactiveMode;
 
+
 WebMidi
 .enable()
 .then(onEnabled)
@@ -21,8 +22,8 @@ interactiveMode = true;
 // Function triggered when WebMidi.js is ready
 function onEnabled() {
     console.log('WebMIDI enabled!');
-    output = WebMidi.getOutputByName("loopMIDI");
-    //output = WebMidi.getOutputByName("IAC Driver Bus 1");
+    //output = WebMidi.getOutputByName("loopMIDI");
+    output = WebMidi.getOutputByName("IAC Driver Bus 1");
     channel = output.channels[1];
 
     //active = true;
@@ -59,9 +60,9 @@ function getNewBall(face) {
     return new Ball(face);
 }
 
-function playNote(note) {
+export function playNote(note) {
     console.log('playing note', note);
-    channel.playNote(note, {duration: 10000});
+    channel.playNote(note, {duration: 1000});
 }
 
 if (active) {
@@ -70,6 +71,8 @@ if (active) {
     music.setScale(Scale.get(`${tonic} pentatonic`).notes);
     console.log(music);
 
+
+    // MAIN LOOP
     setInterval(() => {
         balls.forEach(ball => {
             ball._update()
@@ -96,8 +99,27 @@ if (interactiveMode) {
     process.stdin.on('keypress', (ch, key) => {
         if (key && key.name == 'q') {
             process.stdin.pause();
+            process.exit(0)
         }
-        balls.push(getNewBall(ch))
+        switch (key && key.name) {
+            case 'y':
+                balls.push(getNewBall('up'))
+                break;
+            case 'u':
+                balls.push(getNewBall('front'))
+                break;
+            case 'i':
+                balls.push(getNewBall('back'))
+                break;
+            case 'o':
+                balls.push(getNewBall('left'))
+                break;
+            case 'p':
+                balls.push(getNewBall('right'))
+                break;
+            default:
+                break;
+        }
         console.log('got "keypress"', ch, key);
         if (key && key.name == 'b') {
             changeNotes();
