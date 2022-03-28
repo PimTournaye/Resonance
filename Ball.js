@@ -7,6 +7,9 @@ export default class Ball {
         this.x = start.x,
         this.y = start.y,
 
+        this.xspeed = 1;
+        this.yspeed = 1;
+
         this.mass = 0.4;
         this.massSpeed = 0.01;
         this.maxMass = 1;
@@ -35,8 +38,18 @@ export default class Ball {
         if (!this.active) return;
         if (this.lifetimeCounter == this.lifetime){ 
             this.active = false;
-            console.log('ball died');
+            console.log('ball stopped');
         } 
+    }
+
+    checkWallCollision(){
+        if (this.x == room.xmin || this.x == room.xmax) {
+            this.xspeed *= -1;
+        }
+
+        if (this.y == room.ymin -1 || this.y == room.ymax) {
+            this.yspeed *= -1
+        }
     }
 
     _update() {
@@ -49,6 +62,7 @@ export default class Ball {
             this.changeMass();
         } else this.playNote = false;
         this.mass = this.mass - this.massSpeed;
+        this.checkWallCollision()
         //change velocity
         //change timer a bit
     }
