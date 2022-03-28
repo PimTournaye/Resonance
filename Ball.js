@@ -12,19 +12,20 @@ export default class Ball {
 
         this.velocity = 1;
 
-        this.mass = 0.4;
-        this.massSpeed = _.random(0.01, 0.05);
-        this.maxMass = 1.2;
-        this.minMass = 0.05;
+        this.massSpeed = _.random(0.2, 0.3);
+        this.maxMass = 7;
+        this.minMass = 0.5;
+        this.massDecay = 0.8
+        this.mass = this.maxMass;
 
-        this.note = _.sample(music.getScale());
+        this.note = music.getNote(this.face)
         this.playNote = false;
         this.initplay = playNote(this.note)
 
         this.active = true;
 
         // Amount of bounces a ball can do in total
-        this.lifetime = _.random(3, 5);
+        this.lifetime = _.random(4, 5);
         this.lifetimeCounter = 0;
     }
 
@@ -39,6 +40,10 @@ export default class Ball {
     move(){
         this.x += this.xspeed * this.velocity;
         this.y += this.yspeed * this.velocity;
+    }
+
+    getDirection(){
+
     }
 
     checkLifetime(){
@@ -65,8 +70,8 @@ export default class Ball {
         //     return;
         // }
 
-        this.maxMass *= 0.8
-        this.massSpeed += 0.02
+        this.maxMass *= this.massDecay
+        this.massSpeed += 0.2
 
         this.mass = this.maxMass
 
@@ -74,7 +79,6 @@ export default class Ball {
         this.lifetimeCounter++;
 
         // diminish velocity maybe?
-        // if velocity is too low, splice Ball from list
     }
 
     _update() {
@@ -83,11 +87,12 @@ export default class Ball {
         if (this.mass <= this.minMass) {
             this.checkLifetime()
             console.log('bang!');
-            this.playNote = true;
             this.changeMass();
+            this.playNote = true;
         } else this.playNote = false;
-        this.mass = this.mass - this.massSpeed;
+        this.mass -= this.massSpeed;
         this.checkWallCollision()
+        console.log(this.mass);
         //change velocity
         //change timer a bit
     }

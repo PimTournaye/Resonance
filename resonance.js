@@ -3,49 +3,47 @@
 import Music from './Music.js'
 import Ball from './Ball.js'
 import { SimplexNoise } from 'simplex-noise';
-import {WebMidi} from 'webmidi';
+import { WebMidi } from 'webmidi';
 import { Scale } from '@tonaljs/tonal';
 import _ from 'lodash';
 import readline from 'readline';
 
-let channel, output, interactiveMode;
+let channel, output, interactiveMode, active;
 
+///////////
+// MIDI ///
+///////////
 
 WebMidi
-.enable()
-.then(onEnabled)
-.catch(err => console.log(err));
+    .enable()
+    .then(() => {
+        console.log('WebMIDI enabled!');
+        //output = WebMidi.getOutputByName("loopMIDI");
+        output = WebMidi.getOutputByName("IAC Driver Bus 1");
+        channel = output.channels[1];
+    })
+    .catch(err => console.log(err));
 
-let active = true
+// bools for startup / init
+active = true
 interactiveMode = true;
 
-// Function triggered when WebMidi.js is ready
-function onEnabled() {
-    console.log('WebMIDI enabled!');
-    //output = WebMidi.getOutputByName("loopMIDI");
-    output = WebMidi.getOutputByName("IAC Driver Bus 1");
-    channel = output.channels[1];
-
-    //active = true;
-    //interactiveMode = true;
-}
 
 // Room dimensions
-export let room = {
+export const room = {
     xmin: -300,
     xmax: 300,
     ymin: 900,
     ymax: 0
 }
-
-// Noise generator
-export const simplex = new SimplexNoise();
-
 // Starting position / place of the cube
-export let start = {
+export const start = {
     x: 0,
     y: 0
 }
+
+// Noise generator
+export const simplex = new SimplexNoise();
 
 // Music setup
 let tonic = "C3";
@@ -53,6 +51,10 @@ export let music = new Music(tonic)
 
 // Array for all the balls
 let balls = [];
+
+/////////////////////////
+// HELPER FUNCTIONS /////
+/////////////////////////
 
 // Function that makes new balls
 function getNewBall(face) {
@@ -62,8 +64,30 @@ function getNewBall(face) {
 
 export function playNote(note) {
     console.log('playing note', note);
-    channel.playNote(note, {duration: 1000});
+    channel.playNote(note, { duration: 1000 });
 }
+
+
+function checkDeleteBall(obj) {
+    if (!obj.active) {
+        obj = null;
+    } else return;
+}
+
+function changeNotes() {
+    music.update();
+    let notes = music.getScale();
+    balls.forEach(ball => {
+        let note = _.sample(notes)
+        ball.setNote(note)
+    });
+}
+
+
+
+
+
+// MAIN LOOP
 
 if (active) {
     changeNotes()
@@ -76,26 +100,21 @@ if (active) {
     setInterval(() => {
         balls.forEach(ball => {
             ball._update()
+            checkDeleteBall(ball)
+            
             if (ball.playNote && ball.active) {
                 console.log('will play note right now');
                 playNote(ball.note)
             }
         });
     }, 50);
-    
+
 }
 
-function changeNotes() {
-    music.update();
-    let notes = music.getScale();
-    balls.forEach(ball => {
-        let note = _.sample(notes)
-        ball.setNote(note)
-    });
-}
+
+// KEyBOARD CLI INPUT
 if (interactiveMode) {
     readline.emitKeypressEvents(process.stdin);
-
     process.stdin.on('keypress', (ch, key) => {
         if (key && key.name == 'q') {
             process.stdin.pause();
@@ -123,7 +142,7 @@ if (interactiveMode) {
         console.log('got "keypress"', ch, key);
         if (key && key.name == 'b') {
             changeNotes();
-            playNote(music.getChord(), {duration: 10000})
+            playNote(music.getChord(), { duration: 10000 })
         }
     });
 
