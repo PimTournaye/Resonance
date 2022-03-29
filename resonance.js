@@ -12,10 +12,12 @@ import { Client, Bundle } from 'node-osc';
 
 const client = new Client('127.0.0.1', 9000);
 
-client.send('/vol', 100, () => {
-  client.close();
-});
 
+let test = () => {
+client.send('/test', 100, () => {
+  //client.close();
+});
+}
 let channel, output, interactiveMode, active;
 
 ///////////
@@ -26,8 +28,8 @@ WebMidi
     .enable()
     .then(() => {
         console.log('WebMIDI enabled!');
-        //output = WebMidi.getOutputByName("loopMIDI");
-        output = WebMidi.getOutputByName("IAC Driver Bus 1");
+        output = WebMidi.getOutputByName("loopMIDI");
+        //output = WebMidi.getOutputByName("IAC Driver Bus 1");
         channel = output.channels[1];
     })
     .catch(err => console.log(err));
@@ -71,9 +73,9 @@ function getNewBall(face) {
 }
 
 export function playNote(note, vol, fil) {
-    console.log(note, vol, fil);
+    test()
     console.log('playing note', note);
-    const bundle = new Bundle(['/vol', 92], ['/fil', 88]);
+    const bundle = new Bundle(['/vol', vol], ['/fil', fil]);
     client.send(bundle);
     // client.send('/vol', vol, () => {
     //     client.close();
@@ -123,7 +125,8 @@ if (active) {
             
             if (ball.playNote && ball.active) {
                 console.log('will play note right now');
-                playNote(ball.note, ball.vol, ball.fil)
+                const params = ball.getParams();
+                playNote(ball.note, params.vol, params.fil)
             }
         });
     }, 50);

@@ -23,9 +23,7 @@ export default class Ball {
         this.volume = 100;
         this.filter = 100;
         
-        this.log = () => {
-            console.log(this);
-        }
+        this.log = console.log(this)
         
         
         this.active = true;
@@ -42,6 +40,10 @@ export default class Ball {
 
     getNote(){
         return this.note
+    }
+
+    getParams(){
+        return {vol: this.volume, fil: this.filter}
     }
 
     move(){
@@ -105,7 +107,6 @@ export default class Ball {
         
         
 
-        console.log(this);
         //change velocity
         //change timer a bit
     }
