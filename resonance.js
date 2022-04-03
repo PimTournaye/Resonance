@@ -104,6 +104,27 @@ function changeNotes() {
     });
 }
 
+function sendPanData(x, y) {
+    const bundle = new Bundle(['/panX', x], ['/panY', y]);
+    client.send(bundle);
+}
+
+
+// LOOP FOR EVERY BALL
+function ballUpdate(ball) {
+    ball._update()
+    checkDeleteBall(ball)
+
+    // Get XY coords for panning
+    let coords = ball.getDirection()
+    sendPanData(coords.x, coords.y)
+
+    if (ball.playNote && ball.active) {
+        const params = ball.getParams();
+        playNote(ball.note, params.vol, params.fil)
+    }
+}
+
 
 
 
@@ -112,22 +133,10 @@ function changeNotes() {
 
 if (active) {
     changeNotes()
-
-    music.setScale(Scale.get(`${tonic} pentatonic`).notes);
-    console.log(music);
-
-
     // MAIN LOOP
     setInterval(() => {
         balls.forEach(ball => {
-            ball._update()
-            checkDeleteBall(ball)
-            
-            if (ball.playNote && ball.active) {
-                console.log('will play note right now');
-                const params = ball.getParams();
-                playNote(ball.note, params.vol, params.fil)
-            }
+            ballUpdate(ball)
         });
     }, 50);
 

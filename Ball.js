@@ -52,6 +52,10 @@ export default class Ball {
     }
 
     getDirection(){
+        return {
+            x: this.x / 3,
+            y: this.y / 9
+        }
 
     }
 
