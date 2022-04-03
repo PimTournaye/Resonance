@@ -88,7 +88,6 @@ export function playNote(note, vol, fil) {
 
 }
 
-
 function checkDeleteBall(obj) {
     if (!obj.active) {
         obj = null;
@@ -105,12 +104,15 @@ function changeNotes() {
 }
 
 function sendPanData(x, y) {
+    if (x == false || y == false) {
+        return;
+    }
     const bundle = new Bundle(['/panX', x], ['/panY', y]);
     client.send(bundle);
 }
 
 
-// LOOP FOR EVERY BALL
+// UPDATE LOOP FOR EVERY BALL
 function ballUpdate(ball) {
     ball._update()
     checkDeleteBall(ball)
@@ -119,14 +121,12 @@ function ballUpdate(ball) {
     let coords = ball.getDirection()
     sendPanData(coords.x, coords.y)
 
+    // Check to see if ball plays a note
     if (ball.playNote && ball.active) {
         const params = ball.getParams();
         playNote(ball.note, params.vol, params.fil)
     }
 }
-
-
-
 
 
 // MAIN LOOP
@@ -138,6 +138,9 @@ if (active) {
         balls.forEach(ball => {
             ballUpdate(ball)
         });
+        balls = balls.filter(e  => {
+            return e !== null;
+        })
     }, 50);
 
 }

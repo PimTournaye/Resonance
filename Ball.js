@@ -5,12 +5,12 @@ export default class Ball {
     constructor(face) {
         this.face = face
         this.x = start.x,
-        this.y = start.y,
+        this.y = start.y + 1,
 
         this.xspeed = _.random(-3, 3, true);
         this.yspeed = _.random(0.5, 6, true);;
 
-        this.velocity = 1;
+        this.velocity = 3;
 
         this.massSpeed = _.random(0.2, 0.3);
         this.maxMass = 7;
@@ -49,9 +49,12 @@ export default class Ball {
     move(){
         this.x += this.xspeed * this.velocity;
         this.y += this.yspeed * this.velocity;
+        console.log('moving', this.x, this.y);
     }
 
     getDirection(){
+        if (!this.active) return false;
+        console.log(this.x, 'mapped:', this.x /3);
         return {
             x: this.x / 3,
             y: this.y / 9
@@ -68,14 +71,38 @@ export default class Ball {
     }
 
     checkWallCollision(){
-        if (this.x == room.xmin || this.x == room.xmax) {
+        if (this.x <= room.xmin) {
+            // put ball back in bounds of room
+            this.x = room.xmin + 5;
+            // Invert x vector
             this.xspeed *= -1;
+            console.log('bounced on x-axis');
         }
 
-        if (this.y == room.ymin -1 || this.y == room.ymax) {
-            this.yspeed *= -1
+        if (this.x >= room.xmax) {
+            // put ball back in bounds of room
+            this.x = room.xmax - 5;
+            // Invert x vector
+            this.xspeed *= -1;
+            console.log('bounced on x-axis');
+        }
+
+        if (this.y >= room.ymin) {
+            // put ball back in bounds of room
+            this.y = room.ymin + 1;
+            // Invert y vector
+            this.yspeed *= -1;
+            console.log('bounced on y-axis');
+        }
+        if (this.y <= room.ymax) {
+            // put ball back in bounds of room
+            this.y = room.ymax - 1;
+            // Invert y vector
+            this.yspeed *= -1;
+            console.log('bounced on y-axis');
         }
     }
+
     changeMass() {
         // let sameChance = -_.random(0, 2);
         // if (sameChance == 2) {
@@ -100,14 +127,27 @@ export default class Ball {
     _update() {
         // Check if ball is still active
         if (!this.active) return;
+
+        // Check if ball is 'bouncing'
         if (this.mass <= this.minMass) {
-            this.checkLifetime()
-            console.log('bang!');
+            // Check the amount of bounces left
+            this.checkLifetime();
+            // Change the mass or inbetween bounces
             this.changeMass();
+            // Set boolean to play a note
             this.playNote = true;
         } else this.playNote = false;
+
+        // Decrease mass of ball / Z axis
         this.mass -= this.massSpeed;
+
+        // Check if the ball has reached a wall
         this.checkWallCollision()
+
+        // Move the ball to a new position
+        this.move()
+
+    
         
         
 
