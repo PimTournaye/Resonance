@@ -10,7 +10,8 @@ import readline from 'readline';
 
 import { Client, Bundle } from 'node-osc';
 
-const client = new Client('127.0.0.1', 9000);
+//const client = new Client('127.0.0.1', 9000);
+const client = new Client('localhost', 9000);
 
 
 let test = () => {
@@ -20,6 +21,7 @@ client.send('/test', 100, () => {
 }
 let channel, output, interactiveMode, active;
 
+test();
 ///////////
 // MIDI ///
 ///////////
@@ -28,8 +30,8 @@ WebMidi
     .enable()
     .then(() => {
         console.log('WebMIDI enabled!');
-        output = WebMidi.getOutputByName("loopMIDI");
-        //output = WebMidi.getOutputByName("IAC Driver Bus 1");
+        //output = WebMidi.getOutputByName("loopMIDI");
+        output = WebMidi.getOutputByName("IAC Driver Bus 1");
         channel = output.channels[1];
     })
     .catch(err => console.log(err));
@@ -111,6 +113,24 @@ function sendPanData(x, y) {
     client.send(bundle);
 }
 
+function checkBallCollisions(params) {
+    const radiusThreshold = 15
+    balls.forEach(ball => {
+        const current = ball;
+        const currentCoords = ball.getDirection()
+        balls.forEach(ball => {
+            if (ball == current) return;
+            if (ball.x == currentCoords.x + radiusThreshold || ball.x == currentCoords.x - radiusThreshold){
+                changeNotes();
+                ball.invertVector(ball.xspeed)
+            } else if (ball.y == currentCoords.y + radiusThreshold || ball.y == currentCoords.y - radiusThreshold) {
+                changeNotes();
+                ball.invertVector(ball.yspeed)
+            }
+        });  
+    });
+}
+
 
 // UPDATE LOOP FOR EVERY BALL
 function ballUpdate(ball) {
@@ -120,7 +140,7 @@ function ballUpdate(ball) {
     // Get XY coords for panning
     let coords = ball.getDirection()
     sendPanData(coords.x, coords.y)
-
+    checkBallCollisions();
     // Check to see if ball plays a note
     if (ball.playNote && ball.active) {
         const params = ball.getParams();
