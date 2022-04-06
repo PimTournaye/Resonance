@@ -4,7 +4,6 @@
     "@tonaljs/tonal": "^4.6.5",
     "lodash": "^4.17.21",
     "node-osc": "^6.1.14",
-    "simplex-noise": "^3.0.1",
     "webmidi": "^3.0.15"
   }
 }
