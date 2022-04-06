@@ -10,7 +10,7 @@ export default class Ball {
         this.xspeed = _.random(-3, 3, true);
         this.yspeed = _.random(0.5, 6, true);;
 
-        this.velocity = 3;
+        this.velocity = 6;
 
         this.massSpeed = _.random(0.2, 0.3);
         this.maxMass = 7;
@@ -48,13 +48,11 @@ export default class Ball {
 
     move(){
         this.x += this.xspeed * this.velocity;
-        this.y += this.yspeed * this.velocity;
-        console.log('moving', this.x, this.y);
+        this.y += this.yspeed * (this.velocity * 1.5);
     }
 
     getDirection(){
         if (!this.active) return false;
-        console.log(this.x, 'mapped:', this.x /3);
         return {
             x: this.x / 3,
             y: this.y / 9
@@ -70,12 +68,16 @@ export default class Ball {
         } 
     }
 
+    invertVector(vec){
+        vec *= -1;
+    }
+
     checkWallCollision(){
         if (this.x <= room.xmin) {
             // put ball back in bounds of room
             this.x = room.xmin + 5;
             // Invert x vector
-            this.xspeed *= -1;
+            this.invertVector(this.xspeed);
             console.log('bounced on x-axis');
         }
 
@@ -83,7 +85,7 @@ export default class Ball {
             // put ball back in bounds of room
             this.x = room.xmax - 5;
             // Invert x vector
-            this.xspeed *= -1;
+            this.invertVector(this.xspeed);
             console.log('bounced on x-axis');
         }
 
@@ -91,14 +93,14 @@ export default class Ball {
             // put ball back in bounds of room
             this.y = room.ymin + 1;
             // Invert y vector
-            this.yspeed *= -1;
+            this.invertVector(this.yspeed)
             console.log('bounced on y-axis');
         }
         if (this.y <= room.ymax) {
             // put ball back in bounds of room
             this.y = room.ymax - 1;
             // Invert y vector
-            this.yspeed *= -1;
+            this.invertVector(this.yspeed);
             console.log('bounced on y-axis');
         }
     }
@@ -148,9 +150,6 @@ export default class Ball {
         this.move()
 
     
-        
-        
-
         //change velocity
         //change timer a bit
     }
