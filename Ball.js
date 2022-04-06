@@ -1,83 +1,128 @@
-import { room, start, music, playNote } from "./resonance.js"
+import { room, start, music, playNote, scale } from "./resonance.js"
 import _ from "lodash";
 
 export default class Ball {
     constructor(face) {
         this.face = face
         this.x = start.x,
-        this.y = start.y + 1,
+            this.y = start.y + 1,
 
         this.xspeed = _.random(-3, 3, true);
         this.yspeed = _.random(0.5, 6, true);;
 
-        this.velocity = 6;
+        this.velocity = 10;
 
-        this.massSpeed = _.random(0.2, 0.3);
-        this.maxMass = 7;
+        this.massSpeed;
+        this.maxMass;
         this.minMass = 0.5;
-        this.massDecay = 0.95
-        this.mass = this.maxMass;
-        
+        this.massChange;
+       
+        // this.massSpeed = _.random(0.2, 0.3);
+        // this.maxMass = 7;
+        // this.minMass = 0.5;
+        // this.massChange = 1.4
+        // this.mass = this.maxMass;
+
         this.note = music.getNote(this.face)
         this.playNote = false;
         this.volume = 100;
         this.filter = 100;
-        
+
         this.log = console.log(this)
-        
-        
+
+
         this.active = true;
         this.initplay = playNote(this.note, this.volume, this.filter)
+        this.initProps = this.setProps()
+
+        this.mass = this.maxMass;
 
         // Amount of bounces a ball can do in total
         this.lifetime = _.random(6, 8);
         this.lifetimeCounter = 0;
     }
 
-    setNote(note){
+    setProps(){
+        switch (this.face) {
+            case 'up':
+                this.massSpeed = 0.3;
+                this.maxMass = 7;
+                this.massChange = 1.4;
+                break;
+        
+            case 'front':
+                this.massSpeed = 0.6;
+                this.maxMass = 7;
+                this.massChange = 1.2;
+                break;
+        
+            case 'back':
+                this.massSpeed = 0.2;
+                this.maxMass = 3;
+                this.massChange = 1.7;
+                break;
+        
+            case 'left':
+                this.massSpeed = 0.5;
+                this.maxMass = 12;
+                this.massChange = 1.05;
+                break;
+        
+            case 'right':
+                this.massSpeed = 0.25;
+                this.maxMass = 9;
+                this.massChange = 1.3;
+                break;
+        
+            default:
+                break;
+        }
+    }
+
+    setNote(note) {
         this.note = note;
     }
 
-    getNote(){
+    getNote() {
         return this.note
     }
 
-    getParams(){
-        return {vol: this.volume, fil: this.filter}
+    getParams() {
+        return { vol: this.volume, fil: this.filter }
     }
 
-    move(){
+    move() {
         this.x += this.xspeed * this.velocity;
         this.y += this.yspeed * (this.velocity * 1.5);
     }
 
-    getDirection(){
+    getDirection() {
         if (!this.active) return false;
         return {
-            x: this.x / 3,
-            y: this.y / 9
+            x: scale(this.x, -300, 300, 0, 100),
+            y: scale(this.y, 0, 900, 0, 100)
         }
-
     }
 
-    checkLifetime(){
-        if (!this.active) return;
-        if (this.lifetimeCounter == this.lifetime){ 
+    checkLifetime() {
+        if (this.lifetimeCounter == this.lifetime) {
             this.active = false;
             console.log('ball stopped');
-        } 
+        }
     }
 
-    invertVector(vec){
+    invertVector(vec) {
+        console.log(this.x, this.y);
+        console.log(this.xspeed, this.yspeed);
         vec *= -1;
     }
 
-    checkWallCollision(){
+    checkWallCollision() {
         if (this.x <= room.xmin) {
             // put ball back in bounds of room
             this.x = room.xmin + 5;
             // Invert x vector
-            this.invertVector(this.xspeed);
+            this.xspeed *= -1;
             console.log('bounced on x-axis');
         }
 
@@ -85,7 +130,7 @@ export default class Ball {
             // put ball back in bounds of room
             this.x = room.xmax - 5;
             // Invert x vector
-            this.invertVector(this.xspeed);
+            this.xspeed *= -1
             console.log('bounced on x-axis');
         }
 
@@ -93,37 +138,32 @@ export default class Ball {
             // put ball back in bounds of room
             this.y = room.ymin + 1;
             // Invert y vector
-            this.invertVector(this.yspeed)
+            this.yspeed *= -1
             console.log('bounced on y-axis');
         }
         if (this.y <= room.ymax) {
             // put ball back in bounds of room
             this.y = room.ymax - 1;
             // Invert y vector
-            this.invertVector(this.yspeed);
+            this.yspeed *= -1
             console.log('bounced on y-axis');
         }
     }
 
     changeMass() {
-        // let sameChance = -_.random(0, 2);
-        // if (sameChance == 2) {
-        //     this.mass = this.maxMass;
-        //     return;
-        // }
-
-        this.maxMass *= this.massDecay
+        this.maxMass *= this.massChange
         this.massSpeed += 0.2
 
         this.mass = this.maxMass
 
         this.filter *= 0.8
-        this.volume *= 0.8
+        this.volume *= 0.6
 
         //Increment the lifetime counter now trhat ball has bounced
         this.lifetimeCounter++;
 
         // diminish velocity maybe?
+        this.velocity *= 0.8
     }
 
     _update() {
@@ -147,15 +187,6 @@ export default class Ball {
         this.checkWallCollision()
 
         // Move the ball to a new position
-        this.move()
-
-    
-        //change velocity
-        //change timer a bit
+        this.move() 
     }
-
-
-
-
-
 }
