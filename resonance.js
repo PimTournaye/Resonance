@@ -2,26 +2,26 @@
 
 import Music from './Music.js'
 import Ball from './Ball.js'
-import { SimplexNoise } from 'simplex-noise';
 import { WebMidi } from 'webmidi';
-import { Scale } from '@tonaljs/tonal';
 import _ from 'lodash';
 import readline from 'readline';
 
 import { Client, Bundle } from 'node-osc';
 
-//const client = new Client('127.0.0.1', 9000);
-const client = new Client('localhost', 9000);
+const client = new Client('127.0.0.1', 9000);
+const client1 = new Client('127.0.0.1', 9001);
+//const client = new Client('localhost', 9000);
 
 
 let test = () => {
-client.send('/test', 100, () => {
-  //client.close();
-});
+    client.send('/test', 100, () => {
+        //client.close();
+    });
 }
 let channel, output, interactiveMode, active;
 
 test();
+
 ///////////
 // MIDI ///
 ///////////
@@ -54,9 +54,6 @@ export const start = {
     y: 0
 }
 
-// Noise generator
-export const simplex = new SimplexNoise();
-
 // Music setup
 let tonic = "C3";
 export let music = new Music(tonic)
@@ -76,18 +73,11 @@ function getNewBall(face) {
 
 export function playNote(note, vol, fil) {
     test()
-    console.log('playing note', note);
     const bundle = new Bundle(['/vol', vol], ['/fil', fil]);
     client.send(bundle);
-    // client.send('/vol', vol, () => {
-    //     client.close();
-    //   });
-    // client.send('/fil', fil, () => {
-    //     client.close();
-    //   });
-    channel.playNote(note, { duration: 1000 });
-    
+    client1.send(bundle);
 
+    channel.playNote(note, { duration: 1000 });
 }
 
 function checkDeleteBall(obj) {
@@ -105,29 +95,36 @@ function changeNotes() {
     });
 }
 
+export function scale(number, fromLeft, fromRight, toLeft, toRight) {
+    return toLeft + (number - fromLeft) / (fromRight - fromLeft) * (toRight - toLeft)
+  }
+
 function sendPanData(x, y) {
-    if (x == false || y == false) {
-        return;
-    }
+    if (x == undefined  || x == false || y == undefined || y == false) return;
     const bundle = new Bundle(['/panX', x], ['/panY', y]);
     client.send(bundle);
+    client1.send(bundle);
 }
 
-function checkBallCollisions(params) {
-    const radiusThreshold = 15
+function checkBallCollisions() {
+    const radiusThreshold = 50
     balls.forEach(ball => {
         const current = ball;
         const currentCoords = ball.getDirection()
         balls.forEach(ball => {
             if (ball == current) return;
-            if (ball.x == currentCoords.x + radiusThreshold || ball.x == currentCoords.x - radiusThreshold){
+            if (ball.x == currentCoords.x + radiusThreshold || ball.x == currentCoords.x - radiusThreshold) {
                 changeNotes();
-                ball.invertVector(ball.xspeed)
+                ball.xspeed *= -1;
+                current.xspeed *= -1;
+                console.log('balls collided');
             } else if (ball.y == currentCoords.y + radiusThreshold || ball.y == currentCoords.y - radiusThreshold) {
                 changeNotes();
-                ball.invertVector(ball.yspeed)
+                ball.yspeed *= -1;
+                current.yspeed *= -1;
+                console.log('balls collided');
             }
-        });  
+        });
     });
 }
 
@@ -137,10 +134,18 @@ function ballUpdate(ball) {
     ball._update()
     checkDeleteBall(ball)
 
+    
     // Get XY coords for panning
     let coords = ball.getDirection()
     sendPanData(coords.x, coords.y)
+    
+    // Send extra raw coords to TD
+    const bundle = new Bundle([`/balls/${ball.face}/rawX`, ball.x], [`/balls/${ball.face}/rawY`, ball.y])
+    client.send(bundle)
+
+    // Check if balls are colliding
     checkBallCollisions();
+
     // Check to see if ball plays a note
     if (ball.playNote && ball.active) {
         const params = ball.getParams();
@@ -148,25 +153,22 @@ function ballUpdate(ball) {
     }
 }
 
-
 // MAIN LOOP
-
 if (active) {
     changeNotes()
     // MAIN LOOP
     setInterval(() => {
+        balls = balls.filter(e => {
+            return e.active !== false;
+        })
         balls.forEach(ball => {
             ballUpdate(ball)
         });
-        balls = balls.filter(e  => {
-            return e !== null;
-        })
     }, 50);
 
 }
 
-
-// KEyBOARD CLI INPUT
+// KEYBOARD CLI INPUT
 if (interactiveMode) {
     readline.emitKeypressEvents(process.stdin);
     process.stdin.on('keypress', (ch, key) => {
@@ -196,9 +198,12 @@ if (interactiveMode) {
         console.log('got "keypress"', ch, key);
         if (key && key.name == 'b') {
             changeNotes();
-            playNote(music.getChord(), { duration: 10000 }, 100, 100)
+            playNote(music.getChord(), 100, 100)
         }
     });
-
     process.stdin.setRawMode(true);
 }
+
+setInterval(() => {
+    console.log(balls);
+}, 10000);
