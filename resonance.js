@@ -10,9 +10,8 @@ import { Client } from 'node-osc';
 
 export const TD_OSC_CLIENT = new Client('127.0.0.1', 9000);
 export const ABLETON_OSC_CLIENT = new Client('127.0.0.1', 9001);
-//const TD_OSC_CLIENT = new Client('localhost', 9000);
 
-
+// Somehow, this made stuff work, I'm leaving it here
 let test = () => {
     TD_OSC_CLIENT.send('/test', 100, () => {
         //TD_OSC_CLIENT.close();
@@ -68,7 +67,7 @@ let balls = [];
 
 // Function that makes new balls
 function getNewBall(face) {
-    console.log('creating new ball');
+    console.log('creating new ball - ', face);
     return new Ball(face);
 }
 
@@ -91,11 +90,14 @@ export function scale(number, fromLeft, fromRight, toLeft, toRight) {
     return toLeft + (number - fromLeft) / (fromRight - fromLeft) * (toRight - toLeft)
   }
 
+// Refactor this to check the time between bounces and if a couple of ball are playing at the same time, change the chord?
+
 function checkBallCollisions() {
     const radiusThreshold = 50
     balls.forEach(ball => {
         const current = ball;
         const currentCoords = ball.getDirection()
+
         balls.forEach(ball => {
             if (ball == current) return;
             if (ball.x == currentCoords.x + radiusThreshold || ball.x == currentCoords.x - radiusThreshold) {

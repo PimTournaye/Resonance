@@ -13,11 +13,14 @@ export default class Ball {
 
         this.velocity = 10;
 
+        // Most of these get values assigned later down the constructor chain
         this.massSpeed;
         this.maxMass;
         this.minMass = 0.5;
         this.massChange;
-       
+        // Amount of bounces a ball can do in total
+        this.lifetime = _.random(6, 8);
+        this.lifetimeCounter = 0;
         
         // this.massSpeed = _.random(0.2, 0.3);
         // this.maxMass = 7;
@@ -39,24 +42,21 @@ export default class Ball {
         this.active = true;
         // Initial properties based on face of the cube
         this.initProps = this.setProps();
-        this.log = console.log(this);
+        //this.log = console.log(this);
         
         // Set mass after props are set
         this.mass = this.maxMass;
         // Play a note when hit
-        this.initplay = this._playNote(this.note, this.volume, this.filter)
+        this.initplay = this._playNote(this.note)
 
-        // Amount of bounces a ball can do in total
-        this.lifetime = _.random(6, 8);
-        this.lifetimeCounter = 0;
     }
 
-    _playNote(note, vol, fil) {
-        const bundle = new Bundle(['/vol', vol], ['/fil', fil]);
+    _playNote(note) {
+        const bundle = new Bundle([`/balls/${this.face}/vol`, this.volume], [`/balls/${this.face}/fil`, this.filter]);
         TD_OSC_CLIENT.send(bundle);
-        ABLETON_OSC_CLIENT.send(bundle);
-
-        this.MIDIChannel.playNote(note, { duration: 400 });
+        ABLETON_OSC_CLIENT.send(bundle, () => {
+            this.MIDIChannel.playNote(note, { duration: 400 });
+        });
     }
 
     sendPanData() {
@@ -64,28 +64,23 @@ export default class Ball {
         // Raw data to TouchDesigner
         const rawBundle = new Bundle([`/balls/${this.face}/rawX`, this.x], [`/balls/${this.face}/rawY`, this.y])
         // Mapped values to use percentages in Ableton
-        const mappedBundle = new Bundle([`/balls/${this.face}/panX`, mappedCoords.x], [`/balls/${this.face}/panY`,, mappedCoords.y]);
+        const mappedBundle = new Bundle([`/balls/${this.face}/panX`, mappedCoords.x], [`/balls/${this.face}/panY`, mappedCoords.y]);
         TD_OSC_CLIENT.send(rawBundle);
         ABLETON_OSC_CLIENT.send(mappedBundle);
     }
-
-    setMIDIchannel(){
-        let channels = output.channels;
-        return channels[this.channel]
-    }
-
+    
     setProps(){
         switch (this.face) {
             case 'up':
                 this.massSpeed = 0.3;
                 this.maxMass = 7;
                 this.massChange = 1.4;
-
+                
                 this.channel = 1;
                 this.MIDIChannel = this.setMIDIchannel();
                 break;
-        
-            case 'front':
+                
+                case 'front':
                 this.massSpeed = 0.6;
                 this.maxMass = 7;
                 this.massChange = 1.2;
@@ -128,6 +123,11 @@ export default class Ball {
         }
     }
 
+    setMIDIchannel(){
+        let channels = output.channels;
+        return channels[this.channel]
+    }
+
     setNote(note) {
         this.note = note;
     }
@@ -138,7 +138,8 @@ export default class Ball {
 
     move() {
         this.x += this.xspeed * this.velocity;
-        this.y += this.yspeed * (this.velocity * 1.5);
+        this.y += this.yspeed * this.velocity;
+        //this.y += this.yspeed * (this.velocity * 1.5);
     }
 
     getDirection() {
@@ -156,19 +157,13 @@ export default class Ball {
         }
     }
 
-    invertVector(vec) {
-        console.log(this.x, this.y);
-        console.log(this.xspeed, this.yspeed);
-        vec *= -1;
-    }
-
     checkWallCollision() {
         if (this.x <= room.xmin) {
             // put ball back in bounds of room
             this.x = room.xmin + 5;
             // Invert x vector
             this.xspeed *= -1;
-            console.log('bounced on x-axis');
+            console.log(this.face, 'bounced on x-axis');
         }
 
         if (this.x >= room.xmax) {
@@ -176,7 +171,7 @@ export default class Ball {
             this.x = room.xmax - 5;
             // Invert x vector
             this.xspeed *= -1
-            console.log('bounced on x-axis');
+            console.log(this.face,'bounced on x-axis');
         }
 
         if (this.y >= room.ymin) {
@@ -184,30 +179,35 @@ export default class Ball {
             this.y = room.ymin + 1;
             // Invert y vector
             this.yspeed *= -1
-            console.log('bounced on y-axis');
+            console.log(this.face,'bounced on y-axis');
         }
         if (this.y <= room.ymax) {
             // put ball back in bounds of room
             this.y = room.ymax - 1;
             // Invert y vector
             this.yspeed *= -1
-            console.log('bounced on y-axis');
+            console.log(this.face,'bounced on y-axis');
         }
     }
 
     changeMass() {
-        this.maxMass *= this.massChange;
-        this.massSpeed += 0.2;
+        // Change the time inbetween bounces
+        //this.maxMass *= this.massChange;
+        
+        // Speed up the bounce ever time it bounces
+        //this.massSpeed += 0.2;
 
+        // Reset the current mass to the max possible
         this.mass = this.maxMass;
 
+        // Diminish values for audio effects
         this.filter *= 0.8;
         this.volume *= 0.6;
 
         //Increment the lifetime counter now trhat ball has bounced
         this.lifetimeCounter++;
 
-        // diminish velocity maybe?
+        // Stop moving around as much, but still keep moving
         this.velocity *= 0.8
     }
 
@@ -218,25 +218,20 @@ export default class Ball {
 
         //Send panning data
         this.sendPanData();
-        console.log(this.mass, this.minMass);
         // Check if ball is 'bouncing'
         if (this.mass <= this.minMass) {
-            console.log('should bounce');
             // Change the mass or inbetween bounces
             this.changeMass();
             // Set boolean to play a note
             this._playNote(this.note, this.vol, this.fil);
         }
-
         // Decrease mass of ball / Z axis
         this.mass -= this.massSpeed;
 
-        // Check if the ball has reached a wall
+        // Check if the ball has reached a wall - invert vectors if needed
         this.checkWallCollision();
 
         // Move the ball to a new position
         this.move();
-
-        console.log('done with _update');
     }
 }
