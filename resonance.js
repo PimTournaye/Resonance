@@ -6,19 +6,20 @@ import { WebMidi } from 'webmidi';
 import _ from 'lodash';
 import readline from 'readline';
 
-import { Client, Bundle } from 'node-osc';
+import { Client } from 'node-osc';
 
-const client = new Client('127.0.0.1', 9000);
-const client1 = new Client('127.0.0.1', 9001);
-//const client = new Client('localhost', 9000);
+export const TD_OSC_CLIENT = new Client('127.0.0.1', 9000);
+export const ABLETON_OSC_CLIENT = new Client('127.0.0.1', 9001);
+//const TD_OSC_CLIENT = new Client('localhost', 9000);
 
 
 let test = () => {
-    client.send('/test', 100, () => {
-        //client.close();
+    TD_OSC_CLIENT.send('/test', 100, () => {
+        //TD_OSC_CLIENT.close();
     });
 }
-let channel, output, interactiveMode, active;
+export let channel, output
+let interactiveMode, active;
 
 test();
 
@@ -71,15 +72,6 @@ function getNewBall(face) {
     return new Ball(face);
 }
 
-export function playNote(note, vol, fil) {
-    test()
-    const bundle = new Bundle(['/vol', vol], ['/fil', fil]);
-    client.send(bundle);
-    client1.send(bundle);
-
-    channel.playNote(note, { duration: 1000 });
-}
-
 function checkDeleteBall(obj) {
     if (!obj.active) {
         obj = null;
@@ -98,13 +90,6 @@ function changeNotes() {
 export function scale(number, fromLeft, fromRight, toLeft, toRight) {
     return toLeft + (number - fromLeft) / (fromRight - fromLeft) * (toRight - toLeft)
   }
-
-function sendPanData(x, y) {
-    if (x == undefined  || x == false || y == undefined || y == false) return;
-    const bundle = new Bundle(['/panX', x], ['/panY', y]);
-    client.send(bundle);
-    client1.send(bundle);
-}
 
 function checkBallCollisions() {
     const radiusThreshold = 50
@@ -133,24 +118,6 @@ function checkBallCollisions() {
 function ballUpdate(ball) {
     ball._update()
     checkDeleteBall(ball)
-
-    
-    // Get XY coords for panning
-    let coords = ball.getDirection()
-    sendPanData(coords.x, coords.y)
-    
-    // Send extra raw coords to TD
-    const bundle = new Bundle([`/balls/${ball.face}/rawX`, ball.x], [`/balls/${ball.face}/rawY`, ball.y])
-    client.send(bundle)
-
-    // Check if balls are colliding
-    checkBallCollisions();
-
-    // Check to see if ball plays a note
-    if (ball.playNote && ball.active) {
-        const params = ball.getParams();
-        playNote(ball.note, params.vol, params.fil)
-    }
 }
 
 // MAIN LOOP
@@ -164,8 +131,8 @@ if (active) {
         balls.forEach(ball => {
             ballUpdate(ball)
         });
+        checkBallCollisions();
     }, 50);
-
 }
 
 // KEYBOARD CLI INPUT
@@ -198,12 +165,8 @@ if (interactiveMode) {
         console.log('got "keypress"', ch, key);
         if (key && key.name == 'b') {
             changeNotes();
-            playNote(music.getChord(), 100, 100)
+            playNote(music.getChord(), 100, 100, 1)
         }
     });
     process.stdin.setRawMode(true);
 }
-
-setInterval(() => {
-    console.log(balls);
-}, 10000);
