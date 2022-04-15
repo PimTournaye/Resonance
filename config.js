@@ -10,6 +10,6 @@ export const MIDI_DEVICE_NAME = 'loopMIDI';
 
 // booleans for startup / init
 export let interactiveMode, active, maxMSP;
-active = true   // actives the main loop if true
+active = true   // actives the main loop if true, mostly is here to see if everything sets up correctly
 interactiveMode = true;   // if true, the balls will be created by the user with keyboard input
 maxMSP = false; // if true, the program will function as if it's a Max MSP project

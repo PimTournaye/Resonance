@@ -219,6 +219,7 @@ if (maxMSP) {
                 balls.push(getNewBall('right'))
                 break;
             default:
+                console.log('Max MSP input error');
                 break;
         }
     });
