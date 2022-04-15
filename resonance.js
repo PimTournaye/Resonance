@@ -1,6 +1,6 @@
 import Music from './Music.js'
 import Ball from './Ball.js'
-import { TD_PORT, ABLETON_PORT, active, interactiveMode, maxMSP, MIDI_DEVICE_NAME, INTERVAL_TIMER } from './config.js';
+import { TD_PORT, ABLETON_PORT, active, interactiveMode, maxMSP, MIDI_DEVICE_NAME, INTERVAL_TIMER, KEY_CHANGE_TIMER } from './config.js';
 
 import { WebMidi } from 'webmidi';
 import _ from 'lodash';
@@ -27,6 +27,8 @@ let test = () => {
 }
 test();
 
+let lastCall;
+
 // Room dimensions to simulate the church
 export const room = {
     xmin: -300,
@@ -48,6 +50,10 @@ export let music = new Music(tonic)
 // Array for all the balls
 let balls = [];
 
+// Allow the key to change after some time has passed
+let keyChangeTimer = false;
+
+
 ///////////
 // MIDI ///
 ///////////
@@ -68,6 +74,12 @@ WebMidi
 // Function that makes new balls
 function getNewBall(face) {
     console.log('creating new ball - ', face);
+
+    // check when this function was last called
+    let now = new Date();
+    lastCall = now.getTime();
+    console.log(lastCall);
+
     return new Ball(face);
 }
 
@@ -83,7 +95,7 @@ function changeNotes() {
     music.update();
     let notes = music.getScale();
     balls.forEach(ball => {
-        // set the note of a ball depending on what face it is on in a switch case
+        // set the note of a ball depending on what face it is on in a switch case --- refactor this to use the music object methods
         switch (ball.face) {
             case 'top':
                 ball.setNote(notes[0])
@@ -134,12 +146,14 @@ function checkBallCollisions() {
     });
 }
 
-// function that calls changeNotes() after 5 seconds of getNewBall() not being called
-function checkForNewBall() {
-    if (balls.length == 0) {
-        setTimeout(changeNotes, 5000);
-    }
+function changeNotesTimerCheck() {
+    if (keyChangeTimer && balls.length == 0) {
+        changeNotes();
+        keyChangeTimer = false;
+        lastCall = new Date().getTime();
+    } else return;
 }
+
 
 // UPDATE LOOP FOR EVERY BALL
 function ballUpdate(ball) {
@@ -152,7 +166,7 @@ if (active) {
     changeNotes()
     // MAIN LOOP
     setInterval(() => {
-        checkForNewBall()
+        changeNotesTimerCheck()
         balls = balls.filter(e => {
             return e.active !== false;
         })
@@ -160,6 +174,11 @@ if (active) {
             ballUpdate(ball)
         });
         checkBallCollisions();
+        if (lastCall <= lastCall + KEY_CHANGE_TIMER ) {
+            keyChangeTimer = true;
+        }
+            
+        
     }, INTERVAL_TIMER);
 }
 

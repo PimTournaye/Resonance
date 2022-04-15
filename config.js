@@ -5,8 +5,11 @@ export const ABLETON_PORT = 9001;
 // Time between each loop update
 export const INTERVAL_TIMER = 50;
 
+// Time needed to change the scale after inactivity
+export const KEY_CHANGE_TIMER = 10000;
+
 // MIDI INPUT / OUTPUT DEVICE -- CHANGE TO THE DEVICE YOU WANT TO USE
-export const MIDI_DEVICE_NAME = 'loopMIDI';
+export const MIDI_DEVICE_NAME = "loopMIDI";
 
 // booleans for startup / init
 export let interactiveMode, active, maxMSP;
