@@ -69,6 +69,8 @@ export default class Ball {
         ABLETON_OSC_CLIENT.send(mappedBundle);
     }
     
+    // Set the properties for each individual ball based on the face
+    // Feel free to change these values to your liking
     setProps(){
         switch (this.face) {
             case 'up':
@@ -77,7 +79,6 @@ export default class Ball {
                 this.massChange = 1.4;
                 
                 this.channel = 1;
-                this.MIDIChannel = this.setMIDIchannel();
                 break;
                 
                 case 'front':
@@ -86,7 +87,6 @@ export default class Ball {
                 this.massChange = 1.2;
 
                 this.channel = 2;
-                this.MIDIChannel = this.setMIDIchannel()
                 break;
         
             case 'back':
@@ -95,7 +95,6 @@ export default class Ball {
                 this.massChange = 1.7;
 
                 this.channel = 3;
-                this.MIDIChannel = this.setMIDIchannel()
                 break;
         
             case 'left':
@@ -104,7 +103,6 @@ export default class Ball {
                 this.massChange = 1.05;
 
                 this.channel = 4;
-                this.MIDIChannel = this.setMIDIchannel()
                 break;
         
             case 'right':
@@ -113,7 +111,6 @@ export default class Ball {
                 this.massChange = 1.3;
 
                 this.channel = 5;
-                this.MIDIChannel = this.setMIDIchannel()
                 break;
         
             default:
@@ -121,8 +118,10 @@ export default class Ball {
                 this.active = false;
                 break;
         }
+        this.MIDIChannel = this.setMIDIchannel();
     }
 
+    // Give each face a MIDI individual channel
     setMIDIchannel(){
         let channels = output.channels;
         return channels[this.channel]
@@ -139,7 +138,6 @@ export default class Ball {
     move() {
         this.x += this.xspeed * this.velocity;
         this.y += this.yspeed * this.velocity;
-        //this.y += this.yspeed * (this.velocity * 1.5);
     }
 
     getDirection() {

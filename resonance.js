@@ -1,53 +1,40 @@
-//const Max = require('max-api');
-
 import Music from './Music.js'
 import Ball from './Ball.js'
+import { TD_PORT, ABLETON_PORT, active, interactiveMode, maxMSP, MIDI_DEVICE_NAME, INTERVAL_TIMER } from './config.js';
+
 import { WebMidi } from 'webmidi';
 import _ from 'lodash';
 import readline from 'readline';
-
 import { Client } from 'node-osc';
 
-export const TD_OSC_CLIENT = new Client('127.0.0.1', 9000);
-export const ABLETON_OSC_CLIENT = new Client('127.0.0.1', 9001);
+if (maxMSP) {
+    const Max = require('max-api');
+}
 
-// Somehow, this made stuff work, I'm leaving it here
+/* const MIDI_DEVICE_NAME = 'IAC Driver Bus 1'; */
+
+export const TD_OSC_CLIENT = new Client('127.0.0.1', TD_PORT);
+export const ABLETON_OSC_CLIENT = new Client('127.0.0.1', ABLETON_PORT);
+
+// export these variables for the Ball.js class so it has it's own channel
+export let channel, output
+
+// Somehow, this made OSC work at start, I'm leaving it here for now
 let test = () => {
     TD_OSC_CLIENT.send('/test', 100, () => {
         //TD_OSC_CLIENT.close();
     });
 }
-export let channel, output
-let interactiveMode, active;
-
 test();
 
-///////////
-// MIDI ///
-///////////
-
-WebMidi
-    .enable()
-    .then(() => {
-        console.log('WebMIDI enabled!');
-        //output = WebMidi.getOutputByName("loopMIDI");
-        output = WebMidi.getOutputByName("IAC Driver Bus 1");
-        channel = output.channels[1];
-    })
-    .catch(err => console.log(err));
-
-// bools for startup / init
-active = true
-interactiveMode = true;
-
-
-// Room dimensions
+// Room dimensions to simulate the church
 export const room = {
     xmin: -300,
     xmax: 300,
     ymin: 900,
     ymax: 0
 }
+
 // Starting position / place of the cube
 export const start = {
     x: 0,
@@ -61,9 +48,22 @@ export let music = new Music(tonic)
 // Array for all the balls
 let balls = [];
 
-/////////////////////////
-// HELPER FUNCTIONS /////
-/////////////////////////
+///////////
+// MIDI ///
+///////////
+
+WebMidi
+    .enable()
+    .then(() => {
+        console.log('WebMIDI enabled!');
+        output = WebMidi.getOutputByName(MIDI_DEVICE_NAME);
+        channel = output.channels[1];
+    })
+    .catch(err => console.log(err));
+
+///////////////////////
+// HELPER FUNCTIONS ///
+///////////////////////
 
 // Function that makes new balls
 function getNewBall(face) {
@@ -71,27 +71,46 @@ function getNewBall(face) {
     return new Ball(face);
 }
 
+// Extra function to check if a ball is out of bounces and delete it if it is, it could help with performance
 function checkDeleteBall(obj) {
     if (!obj.active) {
         obj = null;
     } else return;
 }
 
+// Function that changes the notes of the music
 function changeNotes() {
     music.update();
     let notes = music.getScale();
     balls.forEach(ball => {
-        let note = _.sample(notes)
-        ball.setNote(note)
+        // set the note of a ball depending on what face it is on in a switch case
+        switch (ball.face) {
+            case 'top':
+                ball.setNote(notes[0])
+                break;
+            case 'right':
+                ball.setNote(notes[1])
+                break;
+            case 'bottom':
+                ball.setNote(notes[2]);
+                break;
+            case 'left':
+                ball.setNote(notes[3]);
+                break;
+            case 'front':
+                ball.setNote(notes[4]);
+                break;
+        }
+
     });
 }
 
+// Function that scales a number from one range to another
 export function scale(number, fromLeft, fromRight, toLeft, toRight) {
     return toLeft + (number - fromLeft) / (fromRight - fromLeft) * (toRight - toLeft)
-  }
+}
 
-// Refactor this to check the time between bounces and if a couple of ball are playing at the same time, change the chord?
-
+// This function is called every time a balls collide, but this doesn't work for some reason, maybe for the better
 function checkBallCollisions() {
     const radiusThreshold = 50
     balls.forEach(ball => {
@@ -115,6 +134,12 @@ function checkBallCollisions() {
     });
 }
 
+// function that calls changeNotes() after 5 seconds of getNewBall() not being called
+function checkForNewBall() {
+    if (balls.length == 0) {
+        setTimeout(changeNotes, 5000);
+    }
+}
 
 // UPDATE LOOP FOR EVERY BALL
 function ballUpdate(ball) {
@@ -122,11 +147,12 @@ function ballUpdate(ball) {
     checkDeleteBall(ball)
 }
 
-// MAIN LOOP
+// MAIN LOOP FOR THE WHOLE SCRIPT
 if (active) {
     changeNotes()
     // MAIN LOOP
     setInterval(() => {
+        checkForNewBall()
         balls = balls.filter(e => {
             return e.active !== false;
         })
@@ -134,7 +160,7 @@ if (active) {
             ballUpdate(ball)
         });
         checkBallCollisions();
-    }, 50);
+    }, INTERVAL_TIMER);
 }
 
 // KEYBOARD CLI INPUT
@@ -171,4 +197,29 @@ if (interactiveMode) {
         }
     });
     process.stdin.setRawMode(true);
+}
+
+// Max MSP INPUT
+if (maxMSP) {
+    Max.addHandler('input', (command) => {
+        switch (command) {
+            case 'up':
+                balls.push(getNewBall('up'))
+                break;
+            case 'front':
+                balls.push(getNewBall('front'))
+                break;
+            case 'back':
+                balls.push(getNewBall('back'))
+                break;
+            case 'left':
+                balls.push(getNewBall('left'))
+                break;
+            case 'right':
+                balls.push(getNewBall('right'))
+                break;
+            default:
+                break;
+        }
+    });
 }

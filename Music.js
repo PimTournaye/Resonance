@@ -1,49 +1,58 @@
 import _ from 'lodash';
-import pkg from '@tonaljs/tonal';
-const {Chord, transpose } = pkg;;
-import { Scale } from '@tonaljs/tonal';
+import { Interval, Scale, Chord } from '@tonaljs/tonal';
+import maxMSP from './config.js'
 
 let initScale = (tonic) => Scale.get(`${tonic} pentatonic`).notes
 
 
 export default class Music {
-    constructor(tonic){
+    constructor(tonic) {
         this.tonic = tonic;
         this.scale = initScale(tonic)
 
         this.chordtypes = Scale.scaleChords("pentatonic");
 
-        this.transposeNow = false
+        // Give a random chance to tranpose the scale and tonic down -- NOT IMPLEMENTED YET
+        this.transposeRandomChance = true
     }
 
+    // Set new notes for the scale
     updateScale() {
         console.log('updating scale');
         this.setScale(Scale.get(`${this.tonic} pentatonic`).notes)
         return this.scale
     }
 
-    getScale(){
+    getScale() {
         return this.scale
     }
-    
-    setScale(scale){
+
+    setScale(scale) {
         this.scale = scale;
     }
-    
+
+    // Generate a new tonic
     setNextTonic() {
-        // check for different transpositions, set in a check so it don't increase too much every time and moves around a bit
-        let next = transpose(this.tonic, 'P5');
-        this.tonic = next;
+        // Get a random note from the current scale
+        let newTonic = _.sample(this.scale)
+
+        // If the new tonic is too high in the register, transpose it down
+        if (newTonic.parseInt() >= 5) {
+            let distance = Interval.distance(this.tonic, newTonic)
+            let next = Interval.transpose(this.tonic, Interval.invert(distance))
+            this.tonic = next
+        } else {
+            this.tonic = newTonic;
+        }
     }
 
-    getChord(){
+    getChord() {
         let choice = _.sample(this.chordtypes);
-        console.log(choice, this.tonic);
         let chord = Chord.getChord(choice, this.tonic)
         return chord.notes
     }
 
-    getNote(face){
+    getNote(face) {
         let scale = this.getScale()
         switch (face) {
             case 'up':
@@ -61,7 +70,7 @@ export default class Music {
         }
     }
 
-    update(){
+    update() {
         this.setNextTonic();
         this.updateScale();
     }
