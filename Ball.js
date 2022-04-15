@@ -60,6 +60,10 @@ export default class Ball {
         ABLETON_OSC_CLIENT.send(bundle);
 
         this.MIDIChannel.playNote(note, { duration: 400 });
+        if (maxMSP) {
+            let output = note;
+            Max.outlet(output);
+        }
     }
 
     sendPanData() {
