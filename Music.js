@@ -1,14 +1,10 @@
 import _ from 'lodash';
 import { Interval, Scale, Chord } from '@tonaljs/tonal';
-import maxMSP from './config.js'
-
-let initScale = (tonic) => Scale.get(`${tonic} pentatonic`).notes
-
 
 export default class Music {
     constructor(tonic) {
         this.tonic = tonic;
-        this.scale = initScale(tonic)
+        this.scale = () => Scale.get(`${tonic} pentatonic`).notes
 
         this.chordtypes = Scale.scaleChords("pentatonic");
 
@@ -19,8 +15,8 @@ export default class Music {
     // Set new notes for the scale
     updateScale() {
         console.log('updating scale');
-        this.setScale(Scale.get(`${this.tonic} pentatonic`).notes)
-        return this.scale
+        const newScale = Scale.get(`${this.tonic} pentatonic`).notes ;
+        this.setScale(newScale);
     }
 
     getScale() {
@@ -37,7 +33,7 @@ export default class Music {
         let newTonic = _.sample(this.scale)
 
         // If the new tonic is too high in the register, transpose it down
-        if (newTonic.parseInt() >= 5) {
+        if (parseInt(newTonic) >= 5) {
             let distance = Interval.distance(this.tonic, newTonic)
             let next = Interval.transpose(this.tonic, Interval.invert(distance))
             this.tonic = next
@@ -53,20 +49,20 @@ export default class Music {
     }
 
     getNote(face) {
-        let scale = this.getScale()
+        let currentScale = this.getScale();
         switch (face) {
             case 'up':
-                return scale[0]
+                return currentScale[0]
             case 'front':
-                return scale[1]
+                return currentScale[1]
             case 'back':
-                return scale[2]
+                return currentScale[2]
             case 'left':
-                return scale[3]
+                return currentScale[3]
             case 'right':
-                return scale[4]
+                return currentScale[4]
             default:
-                return _.sample(scale)
+                return _.sample(currentScale)
         }
     }
 
