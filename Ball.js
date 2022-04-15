@@ -1,19 +1,28 @@
 import { room, start, music, scale, TD_OSC_CLIENT, ABLETON_OSC_CLIENT, output } from "./resonance.js"
 import _ from "lodash";
 import { Bundle } from 'node-osc';
+import { maxMSP } from "./config.js";
+
+if (maxMSP) {
+    const Max = require("max-api");
+}
 
 export default class Ball {
     constructor(face) {
+        // Which face of the cube got activated
         this.face = face;
+        // Start the ball in the horizontal middle of the room
         this.x = start.x,
-        this.y = start.y + 1;
+        this.y = start.y + 1; // +1 to avoid collision with room walls
 
+        // Randomize the starting x and y speeds
         this.xspeed = _.random(-3, 3, true);
         this.yspeed = _.random(0.5, 6, true);
 
+        // How fast the ball will move
         this.velocity = 10;
 
-        // Most of these get values assigned later down the constructor chain
+        // Most of these get values assigned later down the constructor chain, this
         this.massSpeed;
         this.maxMass;
         this.minMass = 0.5;
@@ -22,45 +31,39 @@ export default class Ball {
         this.lifetime = _.random(6, 8);
         this.lifetimeCounter = 0;
         
-        // this.massSpeed = _.random(0.2, 0.3);
-        // this.maxMass = 7;
-        // this.minMass = 0.5;
-        // this.massChange = 1.4
-        // this.mass = this.maxMass;
-        
+        // Get the appropriate note depending on the face
         this.note = music.getNote(this.face);
+        // Initial percentages of volume and filter
         this.volume = 100;
         this.filter = 100;
         
-        
-        // MIDI channel gets 
+        // MIDI channel gets assigned in the setProps function, defining the MIDI channel for each ball / face
         this.channel;
-        // Output for WebMIDI.js
+        // Output for WebMIDI.js, also assigned in the setProps function
         this.MIDIChannel;
         
         // Bool to see if ball has expired / is still active
         this.active = true;
         // Initial properties based on face of the cube
         this.initProps = this.setProps();
-        //this.log = console.log(this);
         
         // Set mass after props are set
         this.mass = this.maxMass;
-        // Play a note when hit
+        // Play a note when making a ball!
         this.initplay = this._playNote(this.note)
-
     }
 
     _playNote(note) {
+        // Send OSC messages for volume and filter`
         const bundle = new Bundle([`/balls/${this.face}/vol`, this.volume], [`/balls/${this.face}/fil`, this.filter]);
         TD_OSC_CLIENT.send(bundle);
-        ABLETON_OSC_CLIENT.send(bundle, () => {
-            this.MIDIChannel.playNote(note, { duration: 400 });
-        });
+        ABLETON_OSC_CLIENT.send(bundle);
+
+        this.MIDIChannel.playNote(note, { duration: 400 });
     }
 
     sendPanData() {
-        let mappedCoords = this.getDirection();
+        let mappedCoords = this.getPosition();
         // Raw data to TouchDesigner
         const rawBundle = new Bundle([`/balls/${this.face}/rawX`, this.x], [`/balls/${this.face}/rawY`, this.y])
         // Mapped values to use percentages in Ableton
@@ -69,8 +72,16 @@ export default class Ball {
         ABLETON_OSC_CLIENT.send(mappedBundle);
     }
     
-    // Set the properties for each individual ball based on the face
-    // Feel free to change these values to your liking
+    /* 
+    Set the properties for each individual ball based on the face
+    Feel free to change these values to your liking
+
+    massSpeed: gravity of the ball
+    maxMass: The height from which the ball will bounce
+    massChange: How much the height / delay of the ball will change when bouncing
+
+    do leave the channel as is, it's used to set the MIDI channel for each ball
+    */
     setProps(){
         switch (this.face) {
             case 'up':
@@ -115,9 +126,11 @@ export default class Ball {
         
             default:
                 console.log('error in Ball setup');
+                // destroy ball immediately if something goes wrong during setup
                 this.active = false;
                 break;
         }
+        // Set the MIDI channel
         this.MIDIChannel = this.setMIDIchannel();
     }
 
@@ -140,7 +153,8 @@ export default class Ball {
         this.y += this.yspeed * this.velocity;
     }
 
-    getDirection() {
+    // Return the position of the ball but in percentages
+    getPosition() {
         if (!this.active) return false;
         return {
             x: scale(this.x, -300, 300, 0, 100),
@@ -148,13 +162,15 @@ export default class Ball {
         }
     }
 
+    // Checks how many bounces a ball has left
     checkLifetime() {
         if (this.lifetimeCounter == this.lifetime) {
             this.active = false;
-            console.log('ball stopped');
+            console.log(`${this.face} - my ball stopped`);
         }
     }
 
+    // Bounce the ball back if colliding with the walls
     checkWallCollision() {
         if (this.x <= room.xmin) {
             // put ball back in bounds of room
@@ -188,11 +204,12 @@ export default class Ball {
         }
     }
 
+    // Changing values of the ball when bouncing / playing a note
     changeMass() {
         // Change the time inbetween bounces
         //this.maxMass *= this.massChange;
         
-        // Speed up the bounce ever time it bounces
+        // Speed up the bounce every time it bounces
         //this.massSpeed += 0.2;
 
         // Reset the current mass to the max possible
@@ -202,13 +219,14 @@ export default class Ball {
         this.filter *= 0.8;
         this.volume *= 0.6;
 
-        //Increment the lifetime counter now trhat ball has bounced
+        //Increment the lifetime counter now that ball has bounced
         this.lifetimeCounter++;
 
         // Stop moving around as much, but still keep moving
         this.velocity *= 0.8
     }
 
+    // Main loop for a ball
     _update() {
         // Check if ball is still active
         if (!this.active) return;
@@ -216,11 +234,11 @@ export default class Ball {
 
         //Send panning data
         this.sendPanData();
-        // Check if ball is 'bouncing'
+        // Check if ball is 'bouncing' / needs to play a note
         if (this.mass <= this.minMass) {
-            // Change the mass or inbetween bounces
+            // Change the mass and properties of the ball
             this.changeMass();
-            // Set boolean to play a note
+            // Play your note!
             this._playNote(this.note, this.vol, this.fil);
         }
         // Decrease mass of ball / Z axis
