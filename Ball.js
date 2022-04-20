@@ -1,7 +1,7 @@
 import { room, start, music, scale, TD_OSC_CLIENT, ABLETON_OSC_CLIENT, output} from "./resonance.js"
 import _ from "lodash";
 import { Bundle } from 'node-osc';
-import { maxMSP, modeMIDI, keyChangeEvent } from "./config.js";
+import { maxMSP, modeMIDI } from "./config.js";
 import { Note } from "@tonaljs/tonal";
 
 // Check if Max MSP is needed
@@ -15,7 +15,7 @@ export default class Ball {
         this.face = face;
         // Start the ball in the horizontal middle of the room
         this.x = start.x,
-            this.y = start.y + 1; // +1 to avoid collision with room walls
+        this.y = start.y + 1; // +1 to avoid collision with room walls
 
         // Randomize the starting x and y speeds
         this.xspeed = _.random(-3, 3, true);
@@ -192,7 +192,7 @@ export default class Ball {
     }
 
 
-    // Bounce the ball back if colliding with the walls
+    // Bounce the ball back if colliding with the walls of the simulated room
     checkWallCollision() {
         if (this.x <= room.xmin) {
             // put ball back in bounds of room
@@ -252,6 +252,8 @@ export default class Ball {
     _update() {
         // Check if ball is still active
         if (!this.active) return;
+
+        // Check how many bounces the ball has left and destroy it if it doens't have any
         this.checkLifetime();
 
         //Send panning data
@@ -261,7 +263,7 @@ export default class Ball {
             // Change the mass and properties of the ball
             this.changeMass();
             // Play your note!
-            this._playNote(this.note, this.vol, this.fil);
+            this._playNote(this.note);
         }
         // Decrease mass of ball / Z axis
         this.mass -= this.massSpeed;
