@@ -1,6 +1,6 @@
 import Music from './Music.js'
 import Ball from './Ball.js'
-import { TD_PORT, ABLETON_PORT, active, interactiveMode, maxMSP, MIDI_DEVICE_NAME, INTERVAL_TIMER, KEY_CHANGE_TIMER } from './config.js';
+import { TD_PORT, ABLETON_PORT, active, interactiveMode, maxMSP, MIDI_DEVICE_NAME, INTERVAL_TIMER, KEY_CHANGE_TIMER, modeMIDI, keyChangeEvent } from './config.js';
 
 import { WebMidi } from 'webmidi';
 import _ from 'lodash';
@@ -11,8 +11,7 @@ if (maxMSP) {
     const Max = require('max-api');
 }
 
-/* const MIDI_DEVICE_NAME = 'IAC Driver Bus 1'; */
-
+// Set up OSC clients to send data to
 export const TD_OSC_CLIENT = new Client('127.0.0.1', TD_PORT);
 export const ABLETON_OSC_CLIENT = new Client('127.0.0.1', ABLETON_PORT);
 
@@ -26,8 +25,6 @@ let test = () => {
     });
 }
 test();
-
-let lastCall;
 
 // Room dimensions to simulate the church
 export const room = {
@@ -43,21 +40,23 @@ export const start = {
     y: 0
 }
 
-// Music setup
+// Music class setup
 let tonic = "C3";
 export let music = new Music(tonic)
 
 // Array for all the balls
-let balls = [];
+export let balls = [];
 
 // Allow the key to change after some time has passed
-let keyChangeTimer = false;
+let keyChangeTrigger = true;
 
+export let interval;
 
 ///////////
 // MIDI ///
 ///////////
 
+if (modeMIDI) {
 WebMidi
     .enable()
     .then(() => {
@@ -66,20 +65,25 @@ WebMidi
         channel = output.channels[1];
     })
     .catch(err => console.log(err));
-
+}
 ///////////////////////
 // HELPER FUNCTIONS ///
 ///////////////////////
 
+export function enableKeyChangeInterval() {
+    interval = setInterval(() => {
+        changeNotes();
+        console.log('key change interval triggered');
+    } , KEY_CHANGE_TIMER);
+}
 // Function that makes new balls
 function getNewBall(face) {
     console.log('creating new ball - ', face);
-
-    // check when this function was last called
-    let now = new Date();
-    lastCall = now.getTime();
-    console.log(lastCall);
-
+    if (keyChangeEvent) {
+        console.log('key change interval stopped');
+        clearInterval(interval);
+        keyChangeTrigger = true;
+    }
     return new Ball(face);
 }
 
@@ -146,15 +150,6 @@ function checkBallCollisions() {
     });
 }
 
-function changeNotesTimerCheck() {
-    if (keyChangeTimer && balls.length == 0) {
-        changeNotes();
-        keyChangeTimer = false;
-        lastCall = new Date().getTime();
-    } else return;
-}
-
-
 // UPDATE LOOP FOR EVERY BALL
 function ballUpdate(ball) {
     ball._update()
@@ -165,16 +160,22 @@ function ballUpdate(ball) {
 if (active) {
     // MAIN LOOP
     setInterval(() => {
-        changeNotesTimerCheck()
         balls = balls.filter(e => {
             return e.active !== false;
         })
-        balls.forEach(ball => {
-            ballUpdate(ball)
-        });
-        checkBallCollisions();
-        if (lastCall <= lastCall + KEY_CHANGE_TIMER ) {
-            keyChangeTimer = true;
+        if (balls.length != 0) {
+            balls.forEach(ball => {
+                ballUpdate(ball)
+            }); 
+            checkBallCollisions();
+        } else if (keyChangeEvent && keyChangeTrigger) {
+            if (balls.length == 0) {
+                console.log('All balls stopped, ending key change event');
+                keyChangeTrigger = false;
+                // Start the key change event
+                interval = enableKeyChangeInterval();
+                
+            }
         }
     }, INTERVAL_TIMER);
 }

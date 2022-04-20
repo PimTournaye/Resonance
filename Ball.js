@@ -1,8 +1,10 @@
-import { room, start, music, scale, TD_OSC_CLIENT, ABLETON_OSC_CLIENT, output } from "./resonance.js"
+import { room, start, music, scale, TD_OSC_CLIENT, ABLETON_OSC_CLIENT, output} from "./resonance.js"
 import _ from "lodash";
 import { Bundle } from 'node-osc';
-import { maxMSP } from "./config.js";
+import { maxMSP, modeMIDI, keyChangeEvent } from "./config.js";
+import { Note } from "@tonaljs/tonal";
 
+// Check if Max MSP is needed
 if (maxMSP) {
     const Max = require("max-api");
 }
@@ -13,13 +15,13 @@ export default class Ball {
         this.face = face;
         // Start the ball in the horizontal middle of the room
         this.x = start.x,
-        this.y = start.y + 1; // +1 to avoid collision with room walls
+            this.y = start.y + 1; // +1 to avoid collision with room walls
 
         // Randomize the starting x and y speeds
         this.xspeed = _.random(-3, 3, true);
         this.yspeed = _.random(0.5, 6, true);
 
-        // How fast the ball will move
+        // How fast the ball will move through the simulated room
         this.velocity = 10;
 
         // Most of these get values assigned later down the constructor chain, this
@@ -30,23 +32,25 @@ export default class Ball {
         // Amount of bounces a ball can do in total
         this.lifetime = _.random(6, 8);
         this.lifetimeCounter = 0;
-        
+
         // Get the appropriate note depending on the face
         this.note = music.getNote(this.face);
         // Initial percentages of volume and filter
         this.volume = 100;
         this.filter = 100;
-        
+
         // MIDI channel gets assigned in the setProps function, defining the MIDI channel for each ball / face
         this.channel;
         // Output for WebMIDI.js, also assigned in the setProps function
         this.MIDIChannel;
-        
+        // Set a note durection for MIDI notes in milliseconds
+        this.noteDurationMIDI = 400;
+
         // Bool to see if ball has expired / is still active
         this.active = true;
         // Initial properties based on face of the cube
         this.initProps = this.setProps();
-        
+
         // Set mass after props are set
         this.mass = this.maxMass;
         // Play a note when making a ball!
@@ -54,16 +58,25 @@ export default class Ball {
     }
 
     _playNote(note) {
+        // Get rid of eccecssive accidentals in the note string
+        note = Note.simplify(note);
+
         // Send OSC messages for volume and filter`
         const bundle = new Bundle([`/balls/${this.face}/vol`, this.volume], [`/balls/${this.face}/fil`, this.filter]);
         TD_OSC_CLIENT.send(bundle);
         ABLETON_OSC_CLIENT.send(bundle);
-
-        this.MIDIChannel.playNote(note, { duration: 400 });
+        // Check if the note needs to be played through MIDI
+        if (modeMIDI) {
+            this.MIDIChannel.playNote(note, { duration: this.noteDurationMIDI });
+        }
+        // Check if the note needs to be played through Max
         if (maxMSP) {
             let output = note;
             Max.outlet(output);
+        } else {
+            console.log(`Playing note ${note}`);
         }
+
     }
 
     sendPanData() {
@@ -72,10 +85,12 @@ export default class Ball {
         const rawBundle = new Bundle([`/balls/${this.face}/rawX`, this.x], [`/balls/${this.face}/rawY`, this.y])
         // Mapped values to use percentages in Ableton
         const mappedBundle = new Bundle([`/balls/${this.face}/panX`, mappedCoords.x], [`/balls/${this.face}/panY`, mappedCoords.y]);
+
+        // Send to the OSC clients
         TD_OSC_CLIENT.send(rawBundle);
         ABLETON_OSC_CLIENT.send(mappedBundle);
     }
-    
+
     /* 
     Set the properties for each individual ball based on the face
     Feel free to change these values to your liking
@@ -86,24 +101,24 @@ export default class Ball {
 
     do leave the channel as is, it's used to set the MIDI channel for each ball
     */
-    setProps(){
+    setProps() {
         switch (this.face) {
             case 'up':
                 this.massSpeed = 0.3;
                 this.maxMass = 7;
                 this.massChange = 1.4;
-                
+
                 this.channel = 1;
                 break;
-                
-                case 'front':
+
+            case 'front':
                 this.massSpeed = 0.6;
                 this.maxMass = 7;
                 this.massChange = 1.2;
 
                 this.channel = 2;
                 break;
-        
+
             case 'back':
                 this.massSpeed = 0.2;
                 this.maxMass = 3;
@@ -111,7 +126,7 @@ export default class Ball {
 
                 this.channel = 3;
                 break;
-        
+
             case 'left':
                 this.massSpeed = 0.5;
                 this.maxMass = 12;
@@ -119,7 +134,7 @@ export default class Ball {
 
                 this.channel = 4;
                 break;
-        
+
             case 'right':
                 this.massSpeed = 0.25;
                 this.maxMass = 9;
@@ -127,19 +142,21 @@ export default class Ball {
 
                 this.channel = 5;
                 break;
-        
+
             default:
                 console.log('error in Ball setup');
-                // destroy ball immediately if something goes wrong during setup
+                // destroy ball immediately if something goes wrong during setup to avoid further issues
                 this.active = false;
                 break;
         }
         // Set the MIDI channel
-        this.MIDIChannel = this.setMIDIchannel();
+        if (modeMIDI) {
+            this.MIDIChannel = this.setMIDIchannel();
+        }
     }
 
     // Give each face a MIDI individual channel
-    setMIDIchannel(){
+    setMIDIchannel() {
         let channels = output.channels;
         return channels[this.channel]
     }
@@ -174,6 +191,7 @@ export default class Ball {
         }
     }
 
+
     // Bounce the ball back if colliding with the walls
     checkWallCollision() {
         if (this.x <= room.xmin) {
@@ -181,7 +199,7 @@ export default class Ball {
             this.x = room.xmin + 5;
             // Invert x vector
             this.xspeed *= -1;
-            console.log(this.face, 'bounced on x-axis');
+            console.debug(this.face, 'bounced on x-axis');
         }
 
         if (this.x >= room.xmax) {
@@ -189,7 +207,7 @@ export default class Ball {
             this.x = room.xmax - 5;
             // Invert x vector
             this.xspeed *= -1
-            console.log(this.face,'bounced on x-axis');
+            console.debug(this.face, 'bounced on x-axis');
         }
 
         if (this.y >= room.ymin) {
@@ -197,14 +215,14 @@ export default class Ball {
             this.y = room.ymin + 1;
             // Invert y vector
             this.yspeed *= -1
-            console.log(this.face,'bounced on y-axis');
+            console.debug(this.face, 'bounced on y-axis');
         }
         if (this.y <= room.ymax) {
             // put ball back in bounds of room
             this.y = room.ymax - 1;
             // Invert y vector
             this.yspeed *= -1
-            console.log(this.face,'bounced on y-axis');
+            console.debug(this.face, 'bounced on y-axis');
         }
     }
 
@@ -212,7 +230,7 @@ export default class Ball {
     changeMass() {
         // Change the time inbetween bounces
         //this.maxMass *= this.massChange;
-        
+
         // Speed up the bounce every time it bounces
         //this.massSpeed += 0.2;
 

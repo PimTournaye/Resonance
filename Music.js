@@ -35,6 +35,7 @@ export default class Music {
         if (parseInt(newTonic) >= 5) {
             let distance = Interval.distance(this.tonic, newTonic)
             let next = Interval.transpose(this.tonic, Interval.invert(distance))
+            next = Note.simplify(next)
             this.tonic = next
         } else {
             this.tonic = newTonic;
