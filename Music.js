@@ -4,7 +4,7 @@ import { Interval, Scale, Chord } from '@tonaljs/tonal';
 export default class Music {
     constructor(tonic) {
         this.tonic = tonic;
-        this.scale = () => Scale.get(`${tonic} pentatonic`).notes
+        this.scale = this.updateScale()
 
         this.chordtypes = Scale.scaleChords("pentatonic");
 
@@ -14,7 +14,6 @@ export default class Music {
 
     // Set new notes for the scale
     updateScale() {
-        console.log('updating scale');
         const newScale = Scale.get(`${this.tonic} pentatonic`).notes ;
         this.setScale(newScale);
     }
@@ -49,20 +48,22 @@ export default class Music {
     }
 
     getNote(face) {
-        let currentScale = this.getScale();
+        if (this.scale == undefined) {
+            this.updateScale();
+        }
         switch (face) {
             case 'up':
-                return currentScale[0]
+                return this.scale[0]
             case 'front':
-                return currentScale[1]
+                return this.scale[1]
             case 'back':
-                return currentScale[2]
+                return this.scale[2]
             case 'left':
-                return currentScale[3]
+                return this.scale[3]
             case 'right':
-                return currentScale[4]
+                return this.scale[4]
             default:
-                return _.sample(currentScale)
+                return _.sample(this.scale)
         }
     }
 

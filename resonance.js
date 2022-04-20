@@ -127,7 +127,7 @@ function checkBallCollisions() {
     const radiusThreshold = 50
     balls.forEach(ball => {
         const current = ball;
-        const currentCoords = ball.getDirection()
+        const currentCoords = ball.getPosition();
 
         balls.forEach(ball => {
             if (ball == current) return;
@@ -163,7 +163,6 @@ function ballUpdate(ball) {
 
 // MAIN LOOP FOR THE WHOLE SCRIPT
 if (active) {
-    changeNotes()
     // MAIN LOOP
     setInterval(() => {
         changeNotesTimerCheck()
@@ -177,8 +176,6 @@ if (active) {
         if (lastCall <= lastCall + KEY_CHANGE_TIMER ) {
             keyChangeTimer = true;
         }
-            
-        
     }, INTERVAL_TIMER);
 }
 
