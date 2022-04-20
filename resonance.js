@@ -160,6 +160,7 @@ function ballUpdate(ball) {
 
 // MAIN LOOP FOR THE WHOLE SCRIPT
 if (active) {
+
     // MAIN LOOP
     setInterval(() => {
         balls = balls.filter(e => {
@@ -184,6 +185,7 @@ if (active) {
 
 // KEYBOARD CLI INPUT
 if (interactiveMode) {
+    console.log("Press 'q' to quit the program while focused on the terminal");
     readline.emitKeypressEvents(process.stdin);
     process.stdin.on('keypress', (ch, key) => {
         if (key && key.name == 'q') {
