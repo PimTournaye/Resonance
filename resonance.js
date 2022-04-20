@@ -50,7 +50,7 @@ export let balls = [];
 // Allow the key to change after some time has passed
 let keyChangeTrigger = true;
 
-export let interval;
+export let timeout;
 
 ///////////
 // MIDI ///
@@ -70,18 +70,20 @@ WebMidi
 // HELPER FUNCTIONS ///
 ///////////////////////
 
-export function enableKeyChangeInterval() {
-    interval = setInterval(() => {
+// enable the key change event countdown
+export function enableKeyChangeCountdown() {
+    timeout = setTimeout(() => {
         changeNotes();
-        console.log('key change interval triggered');
+        console.log('key change triggered, changed notes');
     } , KEY_CHANGE_TIMER);
 }
 // Function that makes new balls
 function getNewBall(face) {
     console.log('creating new ball - ', face);
+    //
     if (keyChangeEvent) {
-        console.log('key change interval stopped');
-        clearInterval(interval);
+        console.log('key change countdown stopped');
+        clearTimeout(timeout);
         keyChangeTrigger = true;
     }
     return new Ball(face);
@@ -170,10 +172,10 @@ if (active) {
             checkBallCollisions();
         } else if (keyChangeEvent && keyChangeTrigger) {
             if (balls.length == 0) {
-                console.log('All balls stopped, ending key change event');
+                console.log('All balls stopped, starting key change countdown');
                 keyChangeTrigger = false;
                 // Start the key change event
-                interval = enableKeyChangeInterval();
+                timeout = enableKeyChangeCountdown();
                 
             }
         }
