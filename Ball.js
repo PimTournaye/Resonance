@@ -59,7 +59,7 @@ export default class Ball {
 
     _playNote(note) {
         // Get rid of eccecssive accidentals in the note string
-        note = Note.simplify(note);
+        //note = Note.simplify(note);
 
         // Send OSC messages for volume and filter`
         const bundle = new Bundle([`/balls/${this.face}/vol`, this.volume], [`/balls/${this.face}/fil`, this.filter]);
